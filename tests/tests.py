@@ -1,6 +1,6 @@
 from unittest import TestCase, mock, main
 
-from send_email import (
+from src.send_email import (
     SendIssue,
     messages_for_subscribers,
     select_coupon_by_rank,
@@ -10,7 +10,7 @@ from send_email import (
     EMAIL_FROM,
 )
 
-from _types import Message, Email, Subscriber, RecRank, Coupon, CodeCoupon, Rank, Rank
+from src._types import Message, Email, Subscriber, RecRank, Coupon, CodeCoupon, Rank, Rank
 
 
 class TestSendIssue(TestCase):

@@ -1,6 +1,6 @@
 from typing import final, Callable, Iterator
 from dataclasses import dataclass
-from _types import Message, Subscriber, Email, Coupon, Rank, CodeCoupon
+from src._types import Message, Subscriber, Email, Coupon, Rank, CodeCoupon
 
 
 REC_COUNT_FOR_BEST = 10

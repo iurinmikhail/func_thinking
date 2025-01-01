@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch, call, Mock
 from decimal import Decimal
 
-from shipping_cart import add_item_to_cart, Product, SHOPPING_CART
+from src.shipping_cart import add_item_to_cart, Product, SHOPPING_CART
 
 class TestShippingCard(unittest.TestCase):
     @patch("shipping_cart.logger.info")

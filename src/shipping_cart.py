@@ -6,6 +6,8 @@ import logging
 from typing import NamedTuple, TypeAlias, Any, TypeVar, Generic
 from decimal import Decimal
 from enum import Enum
+from copy import deepcopy
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -20,8 +22,8 @@ T = TypeVar("T")
 
 
 class Product(NamedTuple):
-    name: str
-    price: Decimal
+    name: Name
+    price: Price
 
     def show_free_shipping_icon(self, messages: dict[str, str]):
         log_message("free_shipping", messages)
@@ -42,7 +44,7 @@ class LevelLogging(str, Enum):
     INFO = "info"
 
 
-MESSAGES = {
+MESSAGES: dict[str, str] = {
     "free_shipping": "У вас бесплатная доставка",
     "paid_shipping": "У вас платная доставка",
     "tax_amount": "Сумма налога: {tax}",
@@ -69,11 +71,12 @@ def log_message(
 def get_buy_buttons_dom() -> Cart:
     return SHOPPING_CART
 
+
 def set_free_shipping_icon(button: Product, is_show: bool) -> None:
-        if is_show:
-            button.show_free_shipping_icon(MESSAGES)
-        else:
-            button.hide_free_shipping_icon(MESSAGES)
+    if is_show:
+        button.show_free_shipping_icon(MESSAGES)
+    else:
+        button.hide_free_shipping_icon(MESSAGES)
 
 
 def update_shipping_icons(cart: Cart) -> None:
@@ -84,6 +87,7 @@ def update_shipping_icons(cart: Cart) -> None:
 
 
 def is_free_shipping(cart: Cart):
+    """Проверяет действие бесплатной доставки."""
     return calc_total(cart) >= 20
 
 
@@ -105,6 +109,11 @@ def set_cart_total_dom(total: Decimal) -> None:
 
 def calc_total(cart: list[Product]) -> Decimal:
     return sum(map(lambda x: x.price, cart))
+
+
+def cart_tax(cart: Cart) -> Decimal:
+    """Вычисляет налог."""
+    return calc_tax(calc_total(cart))
 
 
 def add_element_last(array: list[T], elem: T) -> list[T]:
@@ -135,14 +144,20 @@ def add_item_to_cart(name: str, price: float) -> None:
     update_tax_dom(total)
 
 
+def get_idx_by_name(cart: Cart, name: Name) -> int | None:
+    """Получает по наименования индекс в корзине."""
+    for idx, product in enumerate(cart):
+        if product.name == name:
+            return idx
+    return None
+
+
 def remove_item_by_name(cart: Cart, name: Name) -> Cart:
-    idx = None
-    for i, _ in enumerate(cart):
-        if cart[i].name == name:
-            idx = i
+    idx = get_idx_by_name(cart, name)
     if idx is not None:
         return remove_items(cart, idx)
     return cart
+
 
 def remove_items(array: list[T], idx: int) -> list[T]:
     new_array = array.copy()
@@ -159,6 +174,19 @@ def delete_handler(name: Name) -> None:
     update_tax_dom(total)
     SHOPPING_CART = shopping_cart
 
+
+def set_price(product: Product, price: Price) -> Product:
+    product_copy = deepcopy(product)
+    product_copy.price = price
+    return product_copy
+
+
+def set_price_by_name(cart: Cart, name: Name, price: Price) -> Cart:
+    cart_copy = cart.copy()
+    for product in cart_copy:
+        if product.name == name:
+            product = set_price(product, price)
+    return cart_copy
 
 
 if __name__ == "__main__":

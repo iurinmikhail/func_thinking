@@ -181,26 +181,23 @@ def add_product_to_cart(name: str, price: float, shopping_cart: Cart) -> Cart:
     return new_shopping_cart
 
 
-def delete_handler(name: Name) -> None:
+def delete_handler(name: Name, shopping_cart: Cart) -> Cart:
     """Удаляет товар из корзины по его наименования."""
-    global SHOPPING_CART
-    shopping_cart = remove_item_by_name(SHOPPING_CART, name)
-    total = calc_total(shopping_cart)
+    new_shopping_cart = remove_item_by_name(shopping_cart, name)
+    total = calc_total(new_shopping_cart)
     set_cart_total_dom(total)
-    update_shipping_icons(shopping_cart)
+    update_shipping_icons(new_shopping_cart)
     update_tax_dom(total)
-    SHOPPING_CART = shopping_cart
-
-
-
-
+    return new_shopping_cart
 
 
 if __name__ == "__main__":
     product = Product(name="car", price=Decimal(15))
-    SHOPPING_CART = add_product_to_cart(name="car", price=15, shopping_cart=SHOPPING_CART)
+    SHOPPING_CART = add_product_to_cart(
+        name="car", price=15, shopping_cart=SHOPPING_CART
+    )
     print(f"{SHOPPING_CART=}")
     assert SHOPPING_CART == [product]
-    delete_handler(name=product.name)
+    SHOPPING_CART = delete_handler(name=product.name, shopping_cart=SHOPPING_CART)
     print(f"{SHOPPING_CART=}")
     assert SHOPPING_CART == []

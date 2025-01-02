@@ -1,6 +1,6 @@
 from unittest import TestCase, mock, main
 
-from src.send_email import (
+from src.send_issue import (
     SendIssue,
     messages_for_subscribers,
     select_coupon_by_rank,

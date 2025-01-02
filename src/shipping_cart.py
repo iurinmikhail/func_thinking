@@ -34,7 +34,7 @@ class Product(NamedTuple):
 
 Cart: TypeAlias = list[Product]
 
-SHOPPING_CART: list[Product] = []
+SHOPPING_CART: Cart = []
 
 
 class LoggerError(Exception): ...
@@ -80,7 +80,7 @@ def set_free_shipping_icon(button: Product, is_show: bool) -> None:
 
 
 def update_shipping_icons(cart: Cart) -> None:
-    for button in get_buy_buttons_dom():
+    for button in cart:
         new_cart = add_item(cart, button)
         has_free_shipping = is_free_shipping(new_cart)
         set_free_shipping_icon(button=button, is_show=has_free_shipping)
@@ -134,14 +134,18 @@ def make_product(name: str, price: float) -> Product:
     )
 
 
-def add_item_to_cart(name: str, price: float) -> None:
-    global SHOPPING_CART
-    new_shopping_cart = add_item(SHOPPING_CART, make_product(name=name, price=price))
-    SHOPPING_CART = new_shopping_cart
-    total = calc_total(SHOPPING_CART)
-    set_cart_total_dom(total)
-    update_shipping_icons(SHOPPING_CART)
-    update_tax_dom(total)
+def set_price(product: Product, price: Price) -> Product:
+    product_copy = deepcopy(product)
+    product_copy.price = price
+    return product_copy
+
+
+def set_price_by_name(cart: Cart, name: Name, price: Price) -> Cart:
+    cart_copy = cart.copy()
+    for product in cart_copy:
+        if product.name == name:
+            product = set_price(product, price)
+    return cart_copy
 
 
 def get_idx_by_name(cart: Cart, name: Name) -> int | None:
@@ -160,12 +164,25 @@ def remove_item_by_name(cart: Cart, name: Name) -> Cart:
 
 
 def remove_items(array: list[T], idx: int) -> list[T]:
+    """Удаление из списка по индексу с копированием при записи."""
     new_array = array.copy()
     new_array.pop(idx)
     return new_array
 
 
+def add_product_to_cart(name: str, price: float, shopping_cart: Cart) -> Cart:
+    """Добавляет товар в корзину."""
+    new_shopping_cart = add_item(shopping_cart, make_product(name=name, price=price))
+
+    total = calc_total(new_shopping_cart)
+    set_cart_total_dom(total)
+    update_shipping_icons(new_shopping_cart)
+    update_tax_dom(total)
+    return new_shopping_cart
+
+
 def delete_handler(name: Name) -> None:
+    """Удаляет товар из корзины по его наименования."""
     global SHOPPING_CART
     shopping_cart = remove_item_by_name(SHOPPING_CART, name)
     total = calc_total(shopping_cart)
@@ -175,24 +192,15 @@ def delete_handler(name: Name) -> None:
     SHOPPING_CART = shopping_cart
 
 
-def set_price(product: Product, price: Price) -> Product:
-    product_copy = deepcopy(product)
-    product_copy.price = price
-    return product_copy
 
 
-def set_price_by_name(cart: Cart, name: Name, price: Price) -> Cart:
-    cart_copy = cart.copy()
-    for product in cart_copy:
-        if product.name == name:
-            product = set_price(product, price)
-    return cart_copy
 
 
 if __name__ == "__main__":
     product = Product(name="car", price=Decimal(15))
-    add_item_to_cart(name="car", price=15)
+    SHOPPING_CART = add_product_to_cart(name="car", price=15, shopping_cart=SHOPPING_CART)
     print(f"{SHOPPING_CART=}")
     assert SHOPPING_CART == [product]
     delete_handler(name=product.name)
+    print(f"{SHOPPING_CART=}")
     assert SHOPPING_CART == []

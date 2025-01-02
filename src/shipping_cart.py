@@ -3,11 +3,11 @@
 """
 
 import logging
-from typing import NamedTuple, TypeAlias, Any, TypeVar, Generic
 from decimal import Decimal
-from enum import Enum
-from copy import deepcopy
+from typing import Any
 
+from src._types import Name, Price, Product, Cart, T
+from src.utils import log_message, show_free_shipping_icon, hide_free_shipping_icon
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,33 +15,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger("__name__")
 
-Name: TypeAlias = str
-Price: TypeAlias = Decimal
-
-T = TypeVar("T")
-
-
-class Product(NamedTuple):
-    name: Name
-    price: Price
-
-    def show_free_shipping_icon(self, messages: dict[str, str]):
-        log_message("free_shipping", messages)
-
-    def hide_free_shipping_icon(self, messages: dict[str, str]):
-        log_message("paid_shipping", messages)
-
-
-Cart: TypeAlias = list[Product]
 
 SHOPPING_CART: Cart = []
-
-
-class LoggerError(Exception): ...
-
-
-class LevelLogging(str, Enum):
-    INFO = "info"
 
 
 MESSAGES: dict[str, str] = {
@@ -52,31 +27,11 @@ MESSAGES: dict[str, str] = {
 }
 
 
-def build_log_message(message_type: str, messages: dict[str, str], **kwargs) -> str:
-    if message_type in messages:
-        return messages[message_type].format(**kwargs)
-    raise LoggerError(f"Неизвестный тип сообщения: {message_type}")
-
-
-def log_message(
-    message_type: str,
-    messages: dict[str, str],
-    level: str = LevelLogging.INFO.value,
-    **kwargs,
-) -> None:
-    message = build_log_message(message_type, messages, **kwargs)
-    getattr(logger, level)(message)
-
-
-def get_buy_buttons_dom() -> Cart:
-    return SHOPPING_CART
-
-
 def set_free_shipping_icon(button: Product, is_show: bool) -> None:
     if is_show:
-        button.show_free_shipping_icon(MESSAGES)
+        show_free_shipping_icon(MESSAGES, logger=logger)
     else:
-        button.hide_free_shipping_icon(MESSAGES)
+        hide_free_shipping_icon(MESSAGES, logger=logger)
 
 
 def update_shipping_icons(cart: Cart) -> None:
@@ -92,7 +47,7 @@ def is_free_shipping(cart: Cart):
 
 
 def set_tax_dom(price: Price) -> None:
-    log_message("tax_amount", MESSAGES, tax=round(price, 2))
+    log_message("tax_amount", MESSAGES, logger=logger, tax=round(price, 2))
 
 
 def update_tax_dom(total: Decimal) -> None:
@@ -104,11 +59,11 @@ def calc_tax(amount: Decimal) -> Decimal:
 
 
 def set_cart_total_dom(total: Decimal) -> None:
-    log_message("cart_total", MESSAGES, total=total)
+    log_message("cart_total", MESSAGES, logger=logger, total=total)
 
 
 def calc_total(cart: list[Product]) -> Decimal:
-    return sum(map(lambda x: x.price, cart))
+    return sum(map(lambda x: x["price"], cart))
 
 
 def cart_tax(cart: Cart) -> Decimal:
@@ -135,23 +90,28 @@ def make_product(name: str, price: float) -> Product:
 
 
 def set_price(product: Product, price: Price) -> Product:
-    product_copy = deepcopy(product)
-    product_copy.price = price
+    product_copy = product.copy()
+    product_copy["price"] = price
     return product_copy
 
 
+def array_set(array: list[T], idx: int, value: Any) -> list[T]:
+    array_copy = array.copy()
+    array_copy[idx] = value
+    return array_copy
+
+
 def set_price_by_name(cart: Cart, name: Name, price: Price) -> Cart:
-    cart_copy = cart.copy()
-    for product in cart_copy:
-        if product.name == name:
-            product = set_price(product, price)
-    return cart_copy
+    idx = get_idx_by_name(cart, name)
+    if idx is not None:
+        return array_set(cart, idx, set_price(cart[idx], price))
+    return cart
 
 
 def get_idx_by_name(cart: Cart, name: Name) -> int | None:
     """Получает по наименования индекс в корзине."""
     for idx, product in enumerate(cart):
-        if product.name == name:
+        if product["name"] == name:
             return idx
     return None
 
@@ -189,6 +149,22 @@ def delete_handler(name: Name, shopping_cart: Cart) -> Cart:
     update_shipping_icons(new_shopping_cart)
     update_tax_dom(total)
     return new_shopping_cart
+
+
+def is_in_cart(cart: Cart, name: Name) -> bool:
+    """Проверяет наличие товара в корзине."""
+    return get_idx_by_name(cart, name) is not None
+
+
+def free_tie_clip(cart: Cart) -> Cart:
+    """Добавляет зажим для галстука,
+    если в корзине есть галстук и нет зажима."""
+    has_tie = is_in_cart(cart, "tie")
+    has_tie_clip = is_in_cart(cart, "tie clip")
+    if has_tie and not has_tie_clip:
+        tie_clip = make_product("tie clip", 0)
+        return add_item(cart, tie_clip)
+    return cart
 
 
 if __name__ == "__main__":

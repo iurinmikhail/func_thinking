@@ -1,16 +1,22 @@
-from typing import TypedDict, TypeAlias, final, NamedTuple
+from typing import TypedDict, TypeAlias, final, NamedTuple, TypeVar
 from enum import Enum
+from decimal import Decimal
+from src.utils import log_message
+
+Name: TypeAlias = str
+Price: TypeAlias = Decimal
 
 
 class Rank(str, Enum):
-    GOOD="good"
-    BEST="best"
-    BAD="bad"
+    GOOD = "good"
+    BEST = "best"
+    BAD = "bad"
 
 
 Email: TypeAlias = str
 RecRank: TypeAlias = int
 CodeCoupon: TypeAlias = str
+
 
 @final
 class Subscriber(NamedTuple):
@@ -30,3 +36,14 @@ class Message(NamedTuple):
     to: Email
     subject: str
     body: str
+
+
+T = TypeVar("T")
+
+
+class Product(TypedDict):
+    name: Name
+    price: Price
+
+
+Cart: TypeAlias = list[Product]

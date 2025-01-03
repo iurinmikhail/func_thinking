@@ -39,7 +39,8 @@ class Message(NamedTuple):
 
 
 T = TypeVar("T")
-
+K = TypeVar("K")
+V = TypeVar("V")
 
 class Product(TypedDict):
     name: Name

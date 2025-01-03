@@ -4,9 +4,9 @@
 
 import logging
 from decimal import Decimal
-from typing import Any
+from typing import Any, Mapping, Generic
 
-from src._types import Name, Price, Product, Cart, T
+from src._types import Name, Price, Product, Cart, T, K, V
 from src.utils import log_message, show_free_shipping_icon, hide_free_shipping_icon
 
 logging.basicConfig(
@@ -41,9 +41,7 @@ def update_shipping_icons(cart: Cart) -> None:
         set_free_shipping_icon(button=button, is_show=has_free_shipping)
 
 
-def is_free_shipping(cart: Cart):
-    """Проверяет действие бесплатной доставки."""
-    return calc_total(cart) >= 20
+
 
 
 def set_tax_dom(price: Price) -> None:
@@ -62,8 +60,7 @@ def set_cart_total_dom(total: Decimal) -> None:
     log_message("cart_total", MESSAGES, logger=logger, total=total)
 
 
-def calc_total(cart: list[Product]) -> Decimal:
-    return sum(map(lambda x: x["price"], cart))
+
 
 
 def cart_tax(cart: Cart) -> Decimal:
@@ -79,14 +76,13 @@ def add_element_last(array: list[T], elem: T) -> list[T]:
 
 
 def add_item(cart: Cart, product: Product) -> Cart:
+    """Добавляет товар в корзину."""
     return add_element_last(cart, product)
 
 
-def make_product(name: str, price: float) -> Product:
-    return Product(
-        name=Name(name),
-        price=Price(price),
-    )
+def make_product(name: Name, price: Price) -> Product:
+    """Создает единицу товара."""
+    return Product(name=name, price=price)
 
 
 def set_price(product: Product, price: Price) -> Product:
@@ -116,13 +112,6 @@ def get_idx_by_name(cart: Cart, name: Name) -> int | None:
     return None
 
 
-def remove_item_by_name(cart: Cart, name: Name) -> Cart:
-    idx = get_idx_by_name(cart, name)
-    if idx is not None:
-        return remove_items(cart, idx)
-    return cart
-
-
 def remove_items(array: list[T], idx: int) -> list[T]:
     """Удаление из списка по индексу с копированием при записи."""
     new_array = array.copy()
@@ -130,7 +119,16 @@ def remove_items(array: list[T], idx: int) -> list[T]:
     return new_array
 
 
-def add_product_to_cart(name: str, price: float, shopping_cart: Cart) -> Cart:
+def calc_total(cart: list[Product]) -> Decimal:
+    return sum(map(lambda x: x["price"], cart))
+
+
+def is_free_shipping(cart: Cart):
+    """Проверяет действие бесплатной доставки."""
+    return calc_total(cart) >= 20
+
+
+def add_product_to_cart(name: Name, price: Price, shopping_cart: Cart) -> Cart:
     """Добавляет товар в корзину."""
     new_shopping_cart = add_item(shopping_cart, make_product(name=name, price=price))
 
@@ -140,6 +138,12 @@ def add_product_to_cart(name: str, price: float, shopping_cart: Cart) -> Cart:
     update_tax_dom(total)
     return new_shopping_cart
 
+def remove_item_by_name(cart: Cart, name: Name) -> Cart:
+    """Удаление товара из корзины по его наименования."""
+    idx = get_idx_by_name(cart, name)
+    if idx is not None:
+        return remove_items(cart, idx)
+    return cart
 
 def delete_handler(name: Name, shopping_cart: Cart) -> Cart:
     """Удаляет товар из корзины по его наименования."""
@@ -167,10 +171,16 @@ def free_tie_clip(cart: Cart) -> Cart:
     return cart
 
 
+def object_set(obj: Mapping[K, V], key: K, value: V) -> Mapping[K, V]:
+    obj_copy = obj.copy()
+    obj_copy[key] = value
+    return obj_copy
+
+
 if __name__ == "__main__":
     product = Product(name="car", price=Decimal(15))
     SHOPPING_CART = add_product_to_cart(
-        name="car", price=15, shopping_cart=SHOPPING_CART
+        name=Name("car"), price=Price(15), shopping_cart=SHOPPING_CART
     )
     print(f"{SHOPPING_CART=}")
     assert SHOPPING_CART == [product]

@@ -16,8 +16,8 @@ logging.basicConfig(
 logger = logging.getLogger("__name__")
 
 
-SHOPPING_CART: Cart = []
-
+SHOPPING_CART: Cart = {}
+FREE_SHIPPING_THRESHOLD = Decimal(10)
 
 MESSAGES: dict[str, str] = {
     "free_shipping": "У вас бесплатная доставка",
@@ -27,7 +27,7 @@ MESSAGES: dict[str, str] = {
 }
 
 
-def set_free_shipping_icon(button: Product, is_show: bool) -> None:
+def set_free_shipping_icon(is_show: bool) -> None:
     if is_show:
         show_free_shipping_icon(MESSAGES, logger=logger)
     else:
@@ -35,10 +35,10 @@ def set_free_shipping_icon(button: Product, is_show: bool) -> None:
 
 
 def update_shipping_icons(cart: Cart) -> None:
-    for button in cart:
-        new_cart = add_item(cart, button)
+    for button in cart.values():
+        new_cart = add_item(cart=cart, product=button)
         has_free_shipping = is_free_shipping(new_cart)
-        set_free_shipping_icon(button=button, is_show=has_free_shipping)
+        set_free_shipping_icon(is_show=has_free_shipping)
 
 
 
@@ -77,7 +77,7 @@ def add_element_last(array: list[T], elem: T) -> list[T]:
 
 def add_item(cart: Cart, product: Product) -> Cart:
     """Добавляет товар в корзину."""
-    return add_element_last(cart, product)
+    return object_set(obj=cart, key=product["name"], value=product)
 
 
 def make_product(name: Name, price: Price) -> Product:
@@ -98,15 +98,16 @@ def array_set(array: list[T], idx: int, value: Any) -> list[T]:
 
 
 def set_price_by_name(cart: Cart, name: Name, price: Price) -> Cart:
-    idx = get_idx_by_name(cart, name)
-    if idx is not None:
-        return array_set(cart, idx, set_price(cart[idx], price))
-    return cart
+    if get_idx_by_name(cart, name):
+        return object_set(obj=cart, key=name, value=set_price(cart[name], price))
+
+    product = make_product(name=name, price=price)
+    return object_set(cart, name, product)
 
 
 def get_idx_by_name(cart: Cart, name: Name) -> int | None:
     """Получает по наименования индекс в корзине."""
-    for idx, product in enumerate(cart):
+    for idx, product in enumerate(cart.values()):
         if product["name"] == name:
             return idx
     return None
@@ -119,18 +120,18 @@ def remove_items(array: list[T], idx: int) -> list[T]:
     return new_array
 
 
-def calc_total(cart: list[Product]) -> Decimal:
-    return sum(map(lambda x: x["price"], cart))
+def calc_total(cart: Cart) -> Decimal:
+    return sum(map(lambda x: x["price"], cart.values()))
 
 
-def is_free_shipping(cart: Cart):
+def is_free_shipping(cart: Cart) -> bool:
     """Проверяет действие бесплатной доставки."""
-    return calc_total(cart) >= 20
+    return calc_total(cart) >= FREE_SHIPPING_THRESHOLD
 
 
 def add_product_to_cart(name: Name, price: Price, shopping_cart: Cart) -> Cart:
     """Добавляет товар в корзину."""
-    new_shopping_cart = add_item(shopping_cart, make_product(name=name, price=price))
+    new_shopping_cart = add_item(cart=shopping_cart, product=make_product(name=name, price=price))
 
     total = calc_total(new_shopping_cart)
     set_cart_total_dom(total)

@@ -1,7 +1,6 @@
-from typing import TypedDict, TypeAlias, final, NamedTuple, TypeVar
+from typing import TypedDict, TypeAlias, final, NamedTuple, TypeVar, Mapping
 from enum import Enum
 from decimal import Decimal
-from src.utils import log_message
 
 Name: TypeAlias = str
 Price: TypeAlias = Decimal
@@ -47,4 +46,4 @@ class Product(TypedDict):
     price: Price
 
 
-Cart: TypeAlias = list[Product]
+Cart: TypeAlias = Mapping[Name, Product]
